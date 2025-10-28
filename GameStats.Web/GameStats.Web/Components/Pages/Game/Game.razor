@@ -1,0 +1,83 @@
+﻿@page "/game"
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+@using GameStats.Web.Services.Interfaces
+@inject IGameService _gameService;
+@inject DialogService dialogService;
+
+<h3>Games</h3>
+
+@if (games is null)
+{
+    <Loading></Loading>
+}
+else
+{
+    <RadzenDataGrid Data="@games" SelectionMode="DataGridSelectionMode.Single">
+        <HeaderTemplate>
+            <RadzenButton class="float-end" Icon="add_circle_outline" Text="Add New" Click="@AddGame" />
+        </HeaderTemplate>
+        <Columns>
+            <RadzenDataGridColumn Property="@nameof(GameModel.GameId)" Title="Game Id" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Property="@nameof(GameModel.GameName)" Title="Game Name" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Width="160px" TItem="GameModel" Context="game">
+                <Template>
+                    <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="edit" class="rz-m-1" Click=@(() => EditGame(game)) />
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" class="rz-m-1" Click=@(() => DeleteGame(game)) />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+
+@code {
+    private IEnumerable<GameModel>? games;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetGames();
+    }
+
+    protected async Task GetGames()
+    {
+        games = await _gameService.GetGamesAsync();
+    }
+
+    private async Task LoadGames()
+    {
+        await GetGames();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected async void AddGame()
+    {
+        GameModel game = await dialogService.OpenAddEditWindow<AddEditGame>(
+            $"Add Game",
+            new Dictionary<string, object>() { { "game", new GameModel() } });
+
+        await LoadGames();
+    }
+
+    protected async void EditGame(GameModel game)
+    {
+        game = await dialogService.OpenAddEditWindow<AddEditGame>(
+            $"Edit Game",
+            new Dictionary<string, object>() { { "game", game } });
+
+        await LoadGames();
+    }
+
+    protected async void DeleteGame(GameModel game)
+    {
+        bool? confirmed = await dialogService.DeleteConfirmation();
+
+        if (confirmed == true)
+        {
+            await _gameService.DeleteGameAsync(game.GameId);
+
+            await LoadGames();
+        }
+    }
+}

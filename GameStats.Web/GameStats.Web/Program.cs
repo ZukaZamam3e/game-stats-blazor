@@ -1,3 +1,4 @@
+using GameStats.Web;
 using GameStats.Web.Components;
 using Radzen;
 
@@ -8,6 +9,9 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddRadzenComponents();
+builder.Services.AddRadzenServices();
+
+builder.Services.AddGameStatServices();
 
 var app = builder.Build();
 
