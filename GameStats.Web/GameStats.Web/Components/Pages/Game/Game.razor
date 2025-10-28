@@ -45,40 +45,39 @@ else
         games = await _gameService.GetGamesAsync();
     }
 
-    protected async void AddGame()
+    private async Task LoadGames()
     {
-        GameModel game = await dialogService.OpenAsync<AddEditGame>(
-            $"Add Game ",
-            new Dictionary<string, object>() { { "game", new GameModel() } },
-            new DialogOptions
-            {
-                Width = "500px"
-            });
-
         await GetGames();
         await InvokeAsync(StateHasChanged);
+    }
+
+    protected async void AddGame()
+    {
+        GameModel game = await dialogService.OpenAddEditWindow<AddEditGame>(
+            $"Add Game",
+            new Dictionary<string, object>() { { "game", new GameModel() } });
+
+        await LoadGames();
     }
 
     protected async void EditGame(GameModel game)
     {
-        game = await dialogService.OpenAsync<AddEditGame>(
+        game = await dialogService.OpenAddEditWindow<AddEditGame>(
             $"Edit Game",
-            new Dictionary<string, object>() { { "game", game } },
-            new DialogOptions
-            {
-                Width = "500px"
-            });
+            new Dictionary<string, object>() { { "game", game } });
 
-        await GetGames();
-        await InvokeAsync(StateHasChanged);
+        await LoadGames();
     }
 
     protected async void DeleteGame(GameModel game)
     {
+        bool? confirmed = await dialogService.DeleteConfirmation();
 
-        await _gameService.DeleteGameAsync(game.GameId);
+        if (confirmed == true)
+        {
+            await _gameService.DeleteGameAsync(game.GameId);
 
-        await GetGames();
-        await InvokeAsync(StateHasChanged);
+            await LoadGames();
+        }
     }
 }
