@@ -17,6 +17,7 @@ public static class DependencyInjection
     public static IServiceCollection AddGameStatServices(this IServiceCollection services)
     {
         services.AddScoped<IGameService, GameService>();
+        services.AddScoped<IMapService, MapService>();
 
         return services;
     }
