@@ -10,7 +10,7 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddRadzenComponents();
 builder.Services.AddRadzenServices();
-
+builder.Services.AddHttpClients();
 builder.Services.AddGameStatServices();
 
 var app = builder.Build();

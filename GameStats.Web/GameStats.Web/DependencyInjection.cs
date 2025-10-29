@@ -19,6 +19,18 @@ public static class DependencyInjection
         services.AddScoped<IGameService, GameService>();
         services.AddScoped<IMapService, MapService>();
 
+
+
+        return services;
+    }
+
+    public static IServiceCollection AddHttpClients(this IServiceCollection services)
+    {
+        services.AddHttpClient(Constants.GameStatsWebAPIClient, client =>
+        {
+            client.BaseAddress = new Uri("https://localhost:7014/"); // Replace with actual API base address
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
         return services;
     }
 }

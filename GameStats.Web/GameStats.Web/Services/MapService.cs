@@ -1,63 +1,47 @@
 ﻿using GameStats.Web.Components.Pages.Game;
 using GameStats.Web.Components.Pages.Map;
 using GameStats.Web.Models;
+using GameStats.Web.Models.Responses;
 using GameStats.Web.Services.Interfaces;
 
 namespace GameStats.Web.Services;
 
-public class MapService : IMapService
+public class MapService(IHttpClientFactory httpClientFactory) : IMapService, IDisposable
 {
-    private static IEnumerable<MapModel> maps = [];
+    private readonly HttpClient httpClient = httpClientFactory.CreateClient(Constants.GameStatsWebAPIClient);
+    private const string mapDataRoute = "api/map/data";
+    private const string mapCreateRoute = "api/map/create";
+    private const string mapUpdateRoute = "api/map/update";
+    private const string mapDeleteRoute = "api/map/delete";
 
-    public Task<IEnumerable<MapModel>> GetMapsAsync()
+    public async Task<IEnumerable<MapModel>> GetMapsAsync()
     {
-        return Task.FromResult(maps);
+        var httpResponse = await httpClient.GetAsync(mapDataRoute);
+        var response = await httpResponse.ParseResponseAsync<GetMapsResponse>();
+        return response.Maps;
     }
 
-    public Task<MapModel> CreateMapAsync(MapModel map)
+    public async Task<MapModel> CreateMapAsync(MapModel map)
     {
-        var add = new MapModel
-        {
-            MapId = maps.Count() > 0 ? maps.Max(m => m.MapId) + 1 : 1,
-            GameId = map.GameId,
-            MapName = map.MapName
-        };
-
-        var list = maps.ToList();
-
-        list.Add(add);
-
-        maps = list;
-
-        return Task.FromResult(add);
+        var httpResponse = await httpClient.PostAsJsonAsync(mapCreateRoute, map);
+        var response = await httpResponse.ParseResponseAsync<MapModel>();
+        return response;
     }
 
-    public Task<MapModel> UpdateMapAsync(MapModel map)
+    public async Task<MapModel> UpdateMapAsync(MapModel map)
     {
-        var edit = maps.FirstOrDefault(m => m.MapId == map.MapId);
-
-        if (edit != null)
-        {
-            edit.MapName = map.MapName;
-            edit.GameId = map.GameId;
-        }
-
-        return Task.FromResult(map);
+        var httpResponse = await httpClient.PostAsJsonAsync(mapUpdateRoute, map);
+        var response = await httpResponse.ParseResponseAsync<MapModel>();
+        return response;
     }
 
-    public Task DeleteMapAsync(int mapId)
+    public async Task<bool> DeleteMapAsync(int mapId)
     {
-        var delete = maps.FirstOrDefault(m => m.MapId == mapId);
-
-        if (delete != null)
-        {
-            var list = maps.ToList();
-
-            list.Remove(delete);
-
-            maps = list;
-        }
-
-        return Task.FromResult(true);
+        var httpResponse = await httpClient.PostAsJsonAsync(mapDeleteRoute, new { mapId });
+        var response = await httpResponse.ParseResponseAsync<DeleteResponse>();
+        return response.Success;
     }
+
+    public void Dispose() => httpClient.Dispose();
+
 }
