@@ -13,11 +13,12 @@ public class GameService(IHttpClientFactory httpClientFactory) : IGameService, I
     private const string gameUpdateRoute = "api/game/update";
     private const string gameDeleteRoute = "api/game/delete";
 
-    public async Task<IEnumerable<GameModel>> GetGamesAsync()
+    public async Task<DataResponse<GameModel>> GetGamesAsync(int take, int offset)
     {
-        var httpResponse = await httpClient.GetAsync(gameDataRoute);
-        var response = await httpResponse.ParseResponseAsync<GetGamesResponse>();
-        return response.Games;
+        string query = $"?take={take}&offset={offset}";
+        var httpResponse = await httpClient.GetAsync(gameDataRoute + query);
+        var response = await httpResponse.ParseResponseAsync<DataResponse<GameModel>>();
+        return response;
     }
 
     public async Task<GameModel> CreateGameAsync(GameModel game)

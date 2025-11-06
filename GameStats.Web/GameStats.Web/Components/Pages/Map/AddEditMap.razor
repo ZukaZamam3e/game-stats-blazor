@@ -1,4 +1,5 @@
-﻿@using GameStats.Web.Services.Interfaces
+﻿@using GameStats.Web.Models.Responses
+@using GameStats.Web.Services.Interfaces
 @inject DialogService dialogService;
 @inject IGameService _gameService;
 @inject IMapService _mapService;
@@ -32,8 +33,8 @@
             MapId = 0
         };
 
-        games = await _gameService.GetGamesAsync();
-
+        DataResponse<GameModel> response = await _gameService.GetGamesAsync(Constants.TakeAll, Constants.Offset);
+        games = response.Data;
         await base.OnInitializedAsync();
     }
 
