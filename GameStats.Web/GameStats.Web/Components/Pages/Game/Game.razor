@@ -45,7 +45,6 @@ else
     private IEnumerable<GameModel>? games;
     private int count;
 
-
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
@@ -67,7 +66,6 @@ else
         count = response.Count;
         games = response.Data;
     }
-
 
     private async Task LoadGames()
     {
@@ -91,6 +89,7 @@ else
             new Dictionary<string, object>() { { "game", game } });
 
         await gamesGrid.UpdateRow(game);
+        await InvokeAsync(StateHasChanged);
     }
 
     protected async void DeleteGame(GameModel game)

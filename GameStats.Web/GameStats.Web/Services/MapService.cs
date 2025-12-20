@@ -14,11 +14,12 @@ public class MapService(IHttpClientFactory httpClientFactory) : IMapService, IDi
     private const string mapUpdateRoute = "api/map/update";
     private const string mapDeleteRoute = "api/map/delete";
 
-    public async Task<IEnumerable<MapModel>> GetMapsAsync()
+    public async Task<DataResponse<MapModel>> GetMapsAsync(int take, int offset)
     {
-        var httpResponse = await httpClient.GetAsync(mapDataRoute);
-        var response = await httpResponse.ParseResponseAsync<GetMapsResponse>();
-        return response.Maps;
+        string query = $"?take={take}&offset={offset}";
+        var httpResponse = await httpClient.GetAsync(mapDataRoute + query);
+        var response = await httpResponse.ParseResponseAsync<DataResponse<MapModel>>();
+        return response;
     }
 
     public async Task<MapModel> CreateMapAsync(MapModel map)
