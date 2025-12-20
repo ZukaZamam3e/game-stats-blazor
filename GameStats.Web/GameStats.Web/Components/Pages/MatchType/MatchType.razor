@@ -1,0 +1,101 @@
+﻿@page "/matchtype"
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+@using GameStats.Web.Models.Responses
+@using GameStats.Web.Services.Interfaces
+@inject IMatchTypeService _matchTypeService
+@inject DialogService dialogService
+
+@if (matchTypes is null)
+{
+    <Loading></Loading>
+}
+else
+{
+    <RadzenDataGrid @ref="@matchTypeGrid"
+                    TItem="MatchTypeModel"
+                    Data="@matchTypes"
+                    SelectionMode="DataGridSelectionMode.Single"
+                    Count="@count"
+                    LoadData="@LoadData">
+        <HeaderTemplate>
+            <RadzenButton class="float-end" Icon="add_circle_outline" Text="Add New" Click="@AddMatchType" />
+        </HeaderTemplate>
+        <Columns>
+            <RadzenDataGridColumn Property="@nameof(MatchTypeModel.MatchTypeId)" Title="Match Type Id" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Property="@nameof(MatchTypeModel.MatchTypeName)" Title="Match Type Name" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Property="@nameof(MatchTypeModel.GameId)" Title="Game Id" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Width="160px" TItem="MatchTypeModel" Context="matchType">
+                <Template>
+                    <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="edit" class="rz-m-1" Click=@(() => EditMatchType(matchType)) />
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" class="rz-m-1" Click=@(() => DeleteMatchType(matchType)) />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+
+@code {
+    private RadzenDataGrid<MatchTypeModel> matchTypeGrid;
+    private IEnumerable<MatchTypeModel>? matchTypes;
+    private int count;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetMatchTypes(Constants.PageSize, Constants.Offset);
+    }
+
+    private async void LoadData(LoadDataArgs args)
+    {
+        int take = args.Top ?? 0;
+        int offset = args.Skip ?? 0;
+        await GetMatchTypes(take, offset);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task GetMatchTypes(int take, int offset)
+    {
+        DataResponse<MatchTypeModel> response = await _matchTypeService.GetMatchTypesAsync(take, offset);
+        count = response.Count;
+        matchTypes = response.Data;
+    }
+
+    private async Task LoadMatchTypes()
+    {
+        await GetMatchTypes(Constants.PageSize, Constants.Offset);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async void AddMatchType()
+    {
+        MatchTypeModel player = await dialogService.OpenAddEditWindow<AddEditMatchType>(
+            $"Add Match Type",
+            new Dictionary<string, object>() { { "matchType", new MatchTypeModel() } });
+
+        await LoadMatchTypes();
+    }
+
+    private async void EditMatchType(MatchTypeModel matchType)
+    {
+        matchType = await dialogService.OpenAddEditWindow<AddEditMatchType>(
+            $"Edit Match Type",
+            new Dictionary<string, object>() { { "matchType", matchType } });
+
+        await matchTypeGrid.UpdateRow(matchType);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async void DeleteMatchType(MatchTypeModel matchType)
+    {
+        bool? confirmed = await dialogService.DeleteConfirmation();
+
+        if (confirmed == true)
+        {
+            await _matchTypeService.DeleteMatchTypeAsync(matchType.MatchTypeId);
+
+            await LoadMatchTypes();
+        }
+    }
+}

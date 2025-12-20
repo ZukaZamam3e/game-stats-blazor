@@ -11,7 +11,7 @@ namespace GameStats.Web
                      "Delete Confirmation",
                      new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
 
-        public static Task<dynamic> OpenAddEditWindow<T>(this DialogService dialogService, string title, Dictionary<string, object> parameters, string width = "500px") where T : ComponentBase => dialogService
+        public static Task<dynamic> OpenAddEditWindow<T>(this DialogService dialogService, string title, Dictionary<string, object> parameters, string width = "300px") where T : ComponentBase => dialogService
             .OpenAsync<T>(title, parameters, new DialogOptions() { Width = width });
 
         public static async Task<T> ParseResponseAsync<T>(this HttpResponseMessage responseMessage, [CallerMemberName] string callerName = "")
