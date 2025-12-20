@@ -2,14 +2,14 @@
 @using GameStats.Web.Services.Interfaces
 @inject DialogService dialogService
 @inject IGameService _gameService
-@inject IPlayerService _playerService
+@inject IMatchTypeService _matchTypeService
 
-<RadzenTemplateForm @ref=@playerDataForm TItem="PlayerModel" Data=@player Submit="OnSave" InvalidSubmit="OnSave">
+<RadzenTemplateForm TItem="MatchTypeModel" Data=@matchType Submit="OnSave" InvalidSubmit="OnSave">
     <RadzenFormField Text="Game">
-        <RadzenDropDown @bind-Value="@player.GameId" Data=@games TextProperty="@nameof(GameModel.GameName)" ValueProperty="@nameof(GameModel.GameId)" Style="width: 100%; max-width: 400px;" />
+        <RadzenDropDown @bind-Value="@matchType.GameId" Data=@games TextProperty="@nameof(GameModel.GameName)" ValueProperty="@nameof(GameModel.GameId)" Style="width: 100%; max-width: 400px;" />
     </RadzenFormField>
-    <RadzenFormField Text="Player Name">
-        <RadzenTextBox @bind-Value="@player.PlayerName" MaxLength="100"></RadzenTextBox>
+    <RadzenFormField Text="Match Type Name">
+        <RadzenTextBox @bind-Value="@matchType.MatchTypeName" MaxLength="100"></RadzenTextBox>
     </RadzenFormField>
     <div class="flex-row justify-content-end" style="margin-top:10px;">
         <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Success" ButtonType="ButtonType.Submit"></RadzenButton>
@@ -19,17 +19,15 @@
 
 @code {
     [Parameter]
-    public required PlayerModel player { get; set; }
+    public required MatchTypeModel matchType { get; set; }
 
     IEnumerable<GameModel> games = [];
 
-    private RadzenTemplateForm<PlayerModel> playerDataForm;
-
     protected override async Task OnInitializedAsync()
     {
-        player ??= new PlayerModel
+        matchType ??= new MatchTypeModel
         {
-            PlayerId = 0
+            MatchTypeId = 0
         };
 
         DataResponse<GameModel> response = await _gameService.GetGamesAsync(Constants.TakeAll, Constants.Offset);
@@ -39,16 +37,16 @@
 
     private async Task OnSave()
     {
-        if (player.PlayerId == 0)
+        if (matchType.MatchTypeId == 0)
         {
-            await _playerService.CreatePlayerAsync(player);
+            await _matchTypeService.CreateMatchTypeAsync(matchType);
         }
         else
         {
-            await _playerService.UpdatePlayerAsync(player);
+            await _matchTypeService.UpdateMatchTypeAsync(matchType);
         }
 
-        dialogService.Close(player);
+        dialogService.Close(matchType);
     }
 
     private void OnCancel()

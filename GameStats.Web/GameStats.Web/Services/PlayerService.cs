@@ -1,6 +1,4 @@
-﻿using GameStats.Web.Components.Pages.Map;
-using GameStats.Web.Components.Pages.Player;
-using GameStats.Web.Models;
+﻿using GameStats.Web.Models;
 using GameStats.Web.Models.Responses;
 using GameStats.Web.Services.Interfaces;
 
@@ -13,8 +11,6 @@ public class PlayerService(IHttpClientFactory httpClientFactory) : IPlayerServic
     private const string playerCreateRoute = "api/player/create";
     private const string playerUpdateRoute = "api/player/update";
     private const string playerDeleteRoute = "api/player/delete";
-
-
 
     public async Task<DataResponse<PlayerModel>> GetPlayersAsync(int take, int offset)
     {
