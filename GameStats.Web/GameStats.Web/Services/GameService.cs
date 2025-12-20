@@ -1,64 +1,46 @@
 ﻿using GameStats.Web.Components.Pages.Game;
 using GameStats.Web.Models;
+using GameStats.Web.Models.Responses;
 using GameStats.Web.Services.Interfaces;
 
 namespace GameStats.Web.Services;
 
-public class GameService : IGameService
+public class GameService(IHttpClientFactory httpClientFactory) : IGameService, IDisposable
 {
-    private static IEnumerable<GameModel> games = [.. Enumerable.Range(1, 5).Select(index => new GameModel
-    {
-        GameId = index,
-        GameName = $"Halo {index}",
-    })];
+    private readonly HttpClient httpClient = httpClientFactory.CreateClient(Constants.GameStatsWebAPIClient);
+    private const string gameDataRoute = "api/game/data";
+    private const string gameCreateRoute = "api/game/create";
+    private const string gameUpdateRoute = "api/game/update";
+    private const string gameDeleteRoute = "api/game/delete";
 
-    public Task<IEnumerable<GameModel>> GetGamesAsync()
+    public async Task<DataResponse<GameModel>> GetGamesAsync(int take, int offset)
     {
-        return Task.FromResult(games);
+        string query = $"?take={take}&offset={offset}";
+        var httpResponse = await httpClient.GetAsync(gameDataRoute + query);
+        var response = await httpResponse.ParseResponseAsync<DataResponse<GameModel>>();
+        return response;
     }
 
-    public Task<GameModel> CreateGameAsync(GameModel game)
+    public async Task<GameModel> CreateGameAsync(GameModel game)
     {
-        var add = new GameModel
-        {
-            GameId = games.Count() > 0 ? games.Max(m => m.GameId) + 1 : 1,
-            GameName = game.GameName
-        };
-
-        var list = games.ToList();
-
-        list.Add(add);
-
-        games = list;
-
-        return Task.FromResult(add);
+        var httpResponse = await httpClient.PostAsJsonAsync(gameCreateRoute, game);
+        var response = await httpResponse.ParseResponseAsync<GameModel>();
+        return response;
     }
 
-    public Task<GameModel> UpdateGameAsync(GameModel game)
+    public async Task<GameModel> UpdateGameAsync(GameModel game)
     {
-        var edit = games.FirstOrDefault(m => m.GameId == game.GameId);
-
-        if(edit != null)
-        {
-            edit.GameName = game.GameName;
-        }
-
-        return Task.FromResult(game);
+        var httpResponse = await httpClient.PostAsJsonAsync(gameUpdateRoute, game);
+        var response = await httpResponse.ParseResponseAsync<GameModel>();
+        return response;
     }
 
-    public Task DeleteGameAsync(int gameId)
+    public async Task<bool> DeleteGameAsync(int gameId)
     {
-        var delete = games.FirstOrDefault(m => m.GameId == gameId);
-
-        if(delete != null)
-        {
-            var list = games.ToList();
-
-            list.Remove(delete);
-
-            games = list;
-        }
-
-        return Task.FromResult(true);
+        var httpResponse = await httpClient.PostAsJsonAsync(gameDeleteRoute, new { gameId });
+        var response = await httpResponse.ParseResponseAsync<DeleteResponse>();
+        return response.Success;
     }
+
+    public void Dispose() => httpClient.Dispose();
 }

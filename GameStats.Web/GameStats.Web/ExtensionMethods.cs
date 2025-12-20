@@ -14,5 +14,19 @@ namespace GameStats.Web
         public static Task<dynamic> OpenAddEditWindow<T>(this DialogService dialogService, string title, Dictionary<string, object> parameters, string width = "500px") where T : ComponentBase => dialogService
             .OpenAsync<T>(title, parameters, new DialogOptions() { Width = width });
 
+        public static async Task<T> ParseResponseAsync<T>(this HttpResponseMessage responseMessage, [CallerMemberName] string callerName = "")
+        {
+            if (!responseMessage.IsSuccessStatusCode)
+            {
+                throw new ApplicationException($"Error occurred calling {callerName}: {responseMessage.ReasonPhrase}");
+            }
+            var responseData = await responseMessage.Content.ReadFromJsonAsync<T>();
+            if (responseData == null)
+            {
+                throw new ApplicationException($"No data returned from {callerName}");
+            }
+            return responseData;
+        }
+
     }
 }

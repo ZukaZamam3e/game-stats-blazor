@@ -2,6 +2,7 @@
 @attribute [StreamRendering]
 @rendermode InteractiveServer
 
+@using GameStats.Web.Models.Responses
 @using GameStats.Web.Services.Interfaces
 @inject IGameService _gameService;
 @inject DialogService dialogService;
@@ -14,7 +15,15 @@
 }
 else
 {
-    <RadzenDataGrid Data="@games" SelectionMode="DataGridSelectionMode.Single">
+    <RadzenDataGrid 
+        @ref="@gamesGrid"
+        TItem="GameModel"
+        Data="@games" 
+        SelectionMode="DataGridSelectionMode.Single"
+        Count="@count"
+        LoadData="@LoadData"
+        AllowPaging="true"
+    >
         <HeaderTemplate>
             <RadzenButton class="float-end" Icon="add_circle_outline" Text="Add New" Click="@AddGame" />
         </HeaderTemplate>
@@ -32,22 +41,37 @@ else
 }
 
 @code {
+    private RadzenDataGrid<GameModel> gamesGrid;
     private IEnumerable<GameModel>? games;
+    private int count;
+
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        await GetGames();
+        await GetGames(Constants.PageSize, Constants.Offset);
     }
 
-    protected async Task GetGames()
+    private async void LoadData(LoadDataArgs args)
     {
-        games = await _gameService.GetGamesAsync();
+        int take = args.Top ?? 0;
+        int offset = args.Skip ?? 0;
+
+        await GetGames(take, offset);
+        await InvokeAsync(StateHasChanged);
     }
+
+    private async Task GetGames(int take, int offset)
+    {
+        DataResponse<GameModel> response = await _gameService.GetGamesAsync(take, offset);
+        count = response.Count;
+        games = response.Data;
+    }
+
 
     private async Task LoadGames()
     {
-        await GetGames();
+        await GetGames(Constants.PageSize, Constants.Offset);
         await InvokeAsync(StateHasChanged);
     }
 
@@ -66,7 +90,7 @@ else
             $"Edit Game",
             new Dictionary<string, object>() { { "game", game } });
 
-        await LoadGames();
+        await gamesGrid.UpdateRow(game);
     }
 
     protected async void DeleteGame(GameModel game)
