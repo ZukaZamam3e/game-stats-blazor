@@ -1,0 +1,59 @@
+﻿@using GameStats.Web.Models.Responses
+@using GameStats.Web.Services.Interfaces
+@inject DialogService dialogService;
+@inject IGameService _gameService;
+@inject IMapService _mapService;
+
+<RadzenTemplateForm @ref=@mapDataForm TItem="MapModel" Data=@map Submit="OnSave" InvalidSubmit="OnSave">
+    <RadzenCard>
+        <RadzenFormField Text="Game">
+            <RadzenDropDown @bind-Value="@map.GameId" Data=@games TextProperty="@nameof(GameModel.GameName)" ValueProperty="@nameof(GameModel.GameId)" Style="width: 100%; max-width: 400px;" />
+        </RadzenFormField>
+        <RadzenFormField Text="Map Name">
+            <RadzenTextBox @bind-Value="@map.MapName" MaxLength="100"></RadzenTextBox>
+        </RadzenFormField>
+        <div class="flex-row justify-content-end" style="margin-top:10px;">
+            <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Success" ButtonType="ButtonType.Submit"></RadzenButton>
+            <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Danger" Click="OnCancel"></RadzenButton>
+        </div>
+    </RadzenCard>
+</RadzenTemplateForm>
+@code {
+    [Parameter]
+    public required MapModel map { get; set; }
+
+    IEnumerable<GameModel> games = [];
+
+    private RadzenTemplateForm<MapModel> mapDataForm;
+
+    protected override async Task OnInitializedAsync()
+    {
+        map ??= new MapModel
+        {
+            MapId = 0
+        };
+
+        DataResponse<GameModel> response = await _gameService.GetGamesAsync(Constants.TakeAll, Constants.Offset);
+        games = response.Data;
+        await base.OnInitializedAsync();
+    }
+
+    private async Task OnSave()
+    {
+        if (map.MapId > 0)
+        {
+            map = await _mapService.UpdateMapAsync(map);
+        }
+        else
+        {
+            map = await _mapService.CreateMapAsync(map);
+        }
+
+        dialogService.Close(map);
+    }
+
+    private void OnCancel()
+    {
+        dialogService.Close(null);
+    }
+}

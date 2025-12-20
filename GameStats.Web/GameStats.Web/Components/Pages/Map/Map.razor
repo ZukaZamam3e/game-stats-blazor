@@ -1,0 +1,104 @@
+﻿@page "/map"
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+@using GameStats.Web.Models.Responses
+@using GameStats.Web.Services.Interfaces
+@inject IMapService _mapService;
+@inject DialogService dialogService;
+
+@if (maps is null)
+{
+    <Loading></Loading>
+}
+else
+{
+    <RadzenDataGrid 
+        @ref="@mapsGrid"
+        TItem="MapModel" 
+        Data="@maps" 
+        SelectionMode="DataGridSelectionMode.Single"
+        Count="@count"
+        LoadData="@LoadData"
+    >
+        <HeaderTemplate>
+            <RadzenButton class="float-end" Icon="add_circle_outline" Text="Add New" Click="@AddMap" />
+        </HeaderTemplate>
+        <Columns>
+            <RadzenDataGridColumn Property="@nameof(MapModel.MapId)" Title="Map Id" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Property="@nameof(MapModel.GameId)" Title="Game Id" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Property="@nameof(MapModel.MapName)" Title="Game Name" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Width="160px" TItem="MapModel" Context="map">
+                <Template>
+                    <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="edit" class="rz-m-1" Click=@(() => EditMap(map)) />
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" class="rz-m-1" Click=@(() => DeleteMap(map)) />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+
+@code {
+    private RadzenDataGrid<MapModel> mapsGrid;
+    private IEnumerable<MapModel>? maps;
+    private int count;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetMaps(Constants.PageSize, Constants.Offset);
+    }
+
+    private async void LoadData(LoadDataArgs args)
+    {
+        int take = args.Top ?? 0;
+        int offset = args.Skip ?? 0;
+
+        await GetMaps(take, offset);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected async Task GetMaps(int take, int offset)
+    {
+        DataResponse<MapModel> response = await _mapService.GetMapsAsync(take, offset);
+        count = response.Count;
+        maps = response.Data;
+    }
+
+    private async Task LoadMaps()
+    {
+        await GetMaps(Constants.PageSize, Constants.Offset);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected async void AddMap()
+    {
+        MapModel Map = await dialogService.OpenAddEditWindow<AddEditMap>(
+            $"Add Map",
+            new Dictionary<string, object>() { { "map", new MapModel() } });
+
+        await LoadMaps();
+    }
+
+    protected async void EditMap(MapModel map)
+    {
+        map = await dialogService.OpenAddEditWindow<AddEditMap>(
+            $"Edit Map",
+            new Dictionary<string, object>() { { "map", map } });
+
+        await mapsGrid.UpdateRow(map);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected async void DeleteMap(MapModel map)
+    {
+        bool? confirmed = await dialogService.DeleteConfirmation();
+
+        if (confirmed == true)
+        {
+            await _mapService.DeleteMapAsync(map.MapId);
+
+            await LoadMaps();
+        }
+    }
+}

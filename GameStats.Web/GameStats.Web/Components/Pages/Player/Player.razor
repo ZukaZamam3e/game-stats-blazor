@@ -1,0 +1,104 @@
+﻿@page "/player"
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+@using GameStats.Web.Models.Responses
+@using GameStats.Web.Services.Interfaces
+@inject IPlayerService _playerService
+@inject DialogService dialogService
+
+@if (players is null)
+{
+    <Loading></Loading>
+}
+else
+{
+    <RadzenDataGrid 
+        @ref="@playersGrid"
+        TItem="PlayerModel" 
+        Data="@players" 
+        SelectionMode="DataGridSelectionMode.Single"
+        Count="@count"
+        LoadData="@LoadData"
+    >
+        <HeaderTemplate>
+            <RadzenButton class="float-end" Icon="add_circle_outline" Text="Add New" Click="@AddPlayer" />
+        </HeaderTemplate>
+        <Columns>
+            <RadzenDataGridColumn Property="@nameof(PlayerModel.PlayerId)" Title="Player Id" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Property="@nameof(PlayerModel.PlayerName)" Title="Player Name" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Property="@nameof(PlayerModel.GameId)" Title="Game Id" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Width="160px" TItem="PlayerModel" Context="player">
+                <Template>
+                    <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="edit" class="rz-m-1" Click=@(() => EditPlayer(player)) />
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" class="rz-m-1" Click=@(() => DeletePlayer(player)) />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+
+@code {
+    private RadzenDataGrid<PlayerModel> playersGrid;
+    private IEnumerable<PlayerModel>? players;
+    private int count;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetPlayers(Constants.PageSize, Constants.Offset);
+    }
+
+    private async void LoadData(LoadDataArgs args)
+    {
+        int take = args.Top ?? 0;
+        int offset = args.Skip ?? 0;
+
+        await GetPlayers(take, offset);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected async Task GetPlayers(int take, int offset)
+    {
+        DataResponse<PlayerModel> response = await _playerService.GetPlayersAsync(take, offset);
+        count = response.Count;
+        players = response.Data;
+    }
+
+    private async Task LoadPlayers()
+    {
+        await GetPlayers(Constants.PageSize, Constants.Offset);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected async void AddPlayer()
+    {
+        PlayerModel player = await dialogService.OpenAddEditWindow<AddEditPlayer>(
+            $"Add Player",
+            new Dictionary<string, object>() { { "player", new PlayerModel() } });
+
+        await LoadPlayers();
+    }
+
+    protected async void EditPlayer(PlayerModel player)
+    {
+        player = await dialogService.OpenAddEditWindow<AddEditPlayer>(
+            $"Edit Player",
+            new Dictionary<string, object>() { { "player", player } });
+
+        await playersGrid.UpdateRow(player);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected async void DeletePlayer(PlayerModel player)
+    {
+        bool? confirmed = await dialogService.DeleteConfirmation();
+
+        if (confirmed == true)
+        {
+            await _playerService.DeletePlayerAsync(player.PlayerId);
+
+            await LoadPlayers();
+        }
+    }
+}

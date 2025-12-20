@@ -1,0 +1,106 @@
+﻿@page "/game"
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+@using GameStats.Web.Models.Responses
+@using GameStats.Web.Services.Interfaces
+@inject IGameService _gameService;
+@inject DialogService dialogService;
+
+<h3>Games</h3>
+
+@if (games is null)
+{
+    <Loading></Loading>
+}
+else
+{
+    <RadzenDataGrid 
+        @ref="@gamesGrid"
+        TItem="GameModel"
+        Data="@games" 
+        SelectionMode="DataGridSelectionMode.Single"
+        Count="@count"
+        LoadData="@LoadData"
+        AllowPaging="true"
+    >
+        <HeaderTemplate>
+            <RadzenButton class="float-end" Icon="add_circle_outline" Text="Add New" Click="@AddGame" />
+        </HeaderTemplate>
+        <Columns>
+            <RadzenDataGridColumn Property="@nameof(GameModel.GameId)" Title="Game Id" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Property="@nameof(GameModel.GameName)" Title="Game Name" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Width="160px" TItem="GameModel" Context="game">
+                <Template>
+                    <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="edit" class="rz-m-1" Click=@(() => EditGame(game)) />
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" class="rz-m-1" Click=@(() => DeleteGame(game)) />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+
+@code {
+    private RadzenDataGrid<GameModel> gamesGrid;
+    private IEnumerable<GameModel>? games;
+    private int count;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetGames(Constants.PageSize, Constants.Offset);
+    }
+
+    private async void LoadData(LoadDataArgs args)
+    {
+        int take = args.Top ?? 0;
+        int offset = args.Skip ?? 0;
+
+        await GetGames(take, offset);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task GetGames(int take, int offset)
+    {
+        DataResponse<GameModel> response = await _gameService.GetGamesAsync(take, offset);
+        count = response.Count;
+        games = response.Data;
+    }
+
+    private async Task LoadGames()
+    {
+        await GetGames(Constants.PageSize, Constants.Offset);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected async void AddGame()
+    {
+        GameModel game = await dialogService.OpenAddEditWindow<AddEditGame>(
+            $"Add Game",
+            new Dictionary<string, object>() { { "game", new GameModel() } });
+
+        await LoadGames();
+    }
+
+    protected async void EditGame(GameModel game)
+    {
+        game = await dialogService.OpenAddEditWindow<AddEditGame>(
+            $"Edit Game",
+            new Dictionary<string, object>() { { "game", game } });
+
+        await gamesGrid.UpdateRow(game);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected async void DeleteGame(GameModel game)
+    {
+        bool? confirmed = await dialogService.DeleteConfirmation();
+
+        if (confirmed == true)
+        {
+            await _gameService.DeleteGameAsync(game.GameId);
+
+            await LoadGames();
+        }
+    }
+}
