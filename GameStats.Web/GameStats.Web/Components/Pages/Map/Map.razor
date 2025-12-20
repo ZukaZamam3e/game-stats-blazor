@@ -2,6 +2,7 @@
 @attribute [StreamRendering]
 @rendermode InteractiveServer
 
+@using GameStats.Web.Models.Responses
 @using GameStats.Web.Services.Interfaces
 @inject IMapService _mapService;
 @inject DialogService dialogService;
@@ -12,7 +13,14 @@
 }
 else
 {
-    <RadzenDataGrid Data="@maps" SelectionMode="DataGridSelectionMode.Single">
+    <RadzenDataGrid 
+        @ref="@mapsGrid"
+        TItem="MapModel" 
+        Data="@maps" 
+        SelectionMode="DataGridSelectionMode.Single"
+        Count="@count"
+        LoadData="@LoadData"
+    >
         <HeaderTemplate>
             <RadzenButton class="float-end" Icon="add_circle_outline" Text="Add New" Click="@AddMap" />
         </HeaderTemplate>
@@ -31,22 +39,35 @@ else
 }
 
 @code {
+    private RadzenDataGrid<MapModel> mapsGrid;
     private IEnumerable<MapModel>? maps;
+    private int count;
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        await GetMaps();
+        await GetMaps(Constants.PageSize, Constants.Offset);
     }
 
-    protected async Task GetMaps()
+    private async void LoadData(LoadDataArgs args)
     {
-        maps = await _mapService.GetMapsAsync();
+        int take = args.Top ?? 0;
+        int offset = args.Skip ?? 0;
+
+        await GetMaps(take, offset);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected async Task GetMaps(int take, int offset)
+    {
+        DataResponse<MapModel> response = await _mapService.GetMapsAsync(take, offset);
+        count = response.Count;
+        maps = response.Data;
     }
 
     private async Task LoadMaps()
     {
-        await GetMaps();
+        await GetMaps(Constants.PageSize, Constants.Offset);
         await InvokeAsync(StateHasChanged);
     }
 
@@ -59,22 +80,23 @@ else
         await LoadMaps();
     }
 
-    protected async void EditMap(MapModel Map)
+    protected async void EditMap(MapModel map)
     {
-        Map = await dialogService.OpenAddEditWindow<AddEditMap>(
+        map = await dialogService.OpenAddEditWindow<AddEditMap>(
             $"Edit Map",
-            new Dictionary<string, object>() { { "map", Map } });
+            new Dictionary<string, object>() { { "map", map } });
 
-        await LoadMaps();
+        await mapsGrid.UpdateRow(map);
+        await InvokeAsync(StateHasChanged);
     }
 
-    protected async void DeleteMap(MapModel Map)
+    protected async void DeleteMap(MapModel map)
     {
         bool? confirmed = await dialogService.DeleteConfirmation();
 
         if (confirmed == true)
         {
-            await _mapService.DeleteMapAsync(Map.MapId);
+            await _mapService.DeleteMapAsync(map.MapId);
 
             await LoadMaps();
         }
