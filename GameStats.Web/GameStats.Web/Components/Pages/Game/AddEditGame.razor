@@ -1,0 +1,50 @@
+﻿@using GameStats.Web.Services.Interfaces
+@inject DialogService dialogService;
+@inject IGameService _gameService;
+
+<RadzenTemplateForm @ref=@gameDataForm TItem="GameModel" Data=@game Submit="OnSave" InvalidSubmit="OnSave">
+    <RadzenCard>
+        <RadzenFormField Text="Game Name">
+            <RadzenTextBox @bind-Value="@game.GameName" MaxLength="100"></RadzenTextBox>
+        </RadzenFormField>
+        <div class="flex-row justify-content-end" style="margin-top:10px;">
+            <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Success" ButtonType="ButtonType.Submit"></RadzenButton>
+            <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Danger" Click="OnCancel"></RadzenButton>
+        </div>
+    </RadzenCard>
+</RadzenTemplateForm>
+@code {
+    [Parameter]
+    public required GameModel game { get; set; }
+
+    private RadzenTemplateForm<GameModel> gameDataForm;
+
+    protected override async Task OnInitializedAsync()
+    {
+        game ??= new GameModel
+        {
+            GameId = 0
+        };
+
+        await base.OnInitializedAsync();
+    }
+
+    private async Task OnSave()
+    {
+        if (game.GameId > 0)
+        {
+            game = await _gameService.UpdateGameAsync(game);
+        }
+        else
+        {
+            game = await _gameService.CreateGameAsync(game);
+        }
+
+        dialogService.Close(game);
+    }
+
+    private void OnCancel()
+    {
+        dialogService.Close(null);
+    }
+}
