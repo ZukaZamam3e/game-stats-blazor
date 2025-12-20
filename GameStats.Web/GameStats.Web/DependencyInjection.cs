@@ -18,8 +18,7 @@ public static class DependencyInjection
     {
         services.AddScoped<IGameService, GameService>();
         services.AddScoped<IMapService, MapService>();
-
-
+        services.AddScoped<IPlayerService, PlayerService>();
 
         return services;
     }
