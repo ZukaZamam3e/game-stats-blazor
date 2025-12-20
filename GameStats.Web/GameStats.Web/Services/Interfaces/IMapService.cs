@@ -5,7 +5,7 @@ namespace GameStats.Web.Services.Interfaces;
 
 public interface IMapService
 {
-    Task<DataResponse<MapModel>> GetMapsAsync(int take, int offset);
+    Task<DataResponse<MapModel>> GetMapsAsync(int take, int offset, int? mapId = null, string? mapName =  null, int? gameId = null);
     Task<MapModel> CreateMapAsync(MapModel map);
     Task<MapModel> UpdateMapAsync(MapModel map);
     Task<bool> DeleteMapAsync(int mapId);

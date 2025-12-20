@@ -20,6 +20,7 @@ public static class DependencyInjection
         services.AddScoped<IMapService, MapService>();
         services.AddScoped<IPlayerService, PlayerService>();
         services.AddScoped<IMatchTypeService, MatchTypeService>();
+        services.AddScoped<IMatchService, MatchService>();
 
         return services;
     }

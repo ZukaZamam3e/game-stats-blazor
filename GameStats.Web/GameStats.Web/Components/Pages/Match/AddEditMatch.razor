@@ -1,0 +1,123 @@
+﻿@using GameStats.Web.Models.Responses
+@using GameStats.Web.Services.Interfaces
+
+@inject DialogService dialogService
+@inject IGameService _gameService
+@inject IMatchService _matchService
+@inject IMapService _mapService
+@inject IMatchTypeService _matchTypeService
+
+<RadzenTemplateForm TItem="MatchModel" Data=@match Submit="OnSave" InvalidSubmit="OnSave">
+    <RadzenFormField Text="Game">
+        <RadzenDropDown @bind-Value="@match.GameId"
+                        Data=@games
+                        TextProperty="@nameof(GameModel.GameName)"
+                        ValueProperty="@nameof(GameModel.GameId)"
+                        Change="OnGameChange"
+                        Style="width: 100%; max-width: 400px;" />
+    </RadzenFormField>
+    <RadzenFormField Text="Map">
+        <RadzenDropDown @bind-Value="@match.MapId" 
+                        Data=@maps 
+                        TextProperty="@nameof(MapModel.MapName)" 
+                        ValueProperty="@nameof(MapModel.MapId)" 
+                        Style="width: 100%; max-width: 400px;"
+                        Disabled="@(match.GameId == 0 && (maps == null || !maps.Any()))" />
+    </RadzenFormField>
+    <RadzenFormField Text="Match Type">
+        <RadzenDropDown @bind-Value="@match.TypeCd"
+                        Data=@matchTypes
+                        TextProperty="@nameof(MatchTypeModel.MatchTypeName)"
+                        ValueProperty="@nameof(MatchTypeModel.MatchTypeId)"
+                        Style="width: 100%; max-width: 400px;" 
+                        Disabled="@(match.GameId == 0 && (matchTypes == null || !matchTypes.Any()))" />
+    </RadzenFormField>
+    <RadzenFormField Text="Old Match Id">
+        <RadzenNumeric @bind-Value="@match.OldMatchId"></RadzenNumeric>
+    </RadzenFormField>
+    <RadzenFormField Text="Match Type Name">
+        <RadzenTextBox @bind-Value="@match.MatchName" MaxLength="100"></RadzenTextBox>
+    </RadzenFormField>
+    <RadzenFormField Text="Total Time">
+        <RadzenNumeric @bind-Value="@match.TotalTime"></RadzenNumeric>
+    </RadzenFormField>
+    <RadzenFormField Text="Created Date">
+        <RadzenDatePicker @bind-Value="@match.CreatedDate" ShowTime="true" HourFormat="12" DateFormat="MM/dd/yyyy h:mm tt" Name="DatePickerHourFormat" />
+    </RadzenFormField>
+    <div class="flex-row justify-content-end" style="margin-top:10px;">
+        <RadzenButton Text="Save" ButtonStyle="ButtonStyle.Success" ButtonType="ButtonType.Submit"></RadzenButton>
+        <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Danger" Click="OnCancel"></RadzenButton>
+    </div>
+</RadzenTemplateForm>
+
+@code {
+    [Parameter]
+    public required MatchModel match { get; set; }
+
+    IEnumerable<GameModel> games = [];
+    IEnumerable<MatchTypeModel> matchTypes = [];
+    IEnumerable<MapModel> maps = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if(match != null)
+        {
+            await LoadSupportingData(match.GameId);
+        }
+        else
+        {
+            match = new MatchModel
+            {
+                MatchId = 0
+            };
+        }
+
+        DataResponse<GameModel> response = await _gameService.GetGamesAsync(Constants.TakeAll, Constants.Offset);
+        games = response.Data;
+        await base.OnInitializedAsync();
+    }
+
+    private async Task OnGameChange(object value)
+    {
+        if (value is int gameId)
+        {
+            await LoadSupportingData(gameId);
+        }
+        else
+        {
+            matchTypes = [];
+            maps = [];
+        }
+
+        match.MapId = 0;
+        match.TypeCd = 0;
+    }
+
+    private async Task LoadSupportingData(int gameId)
+    {
+        DataResponse<MatchTypeModel> matchTypeResponse = await _matchTypeService.GetMatchTypesAsync(Constants.TakeAll, Constants.Offset, null, null, gameId);
+        matchTypes = matchTypeResponse.Data;
+
+        DataResponse<MapModel> mapResponse = await _mapService.GetMapsAsync(Constants.TakeAll, Constants.Offset, null, null, gameId);
+        maps = mapResponse.Data;
+    }
+
+    private async Task OnSave()
+    {
+        if (match.MatchId == 0)
+        {
+            await _matchService.CreateMatchAsync(match);
+        }
+        else
+        {
+            await _matchService.UpdateMatchAsync(match); 
+        }
+
+        dialogService.Close(match); 
+    }
+
+    private void OnCancel()
+    {
+        dialogService.Close(null);
+    }
+}

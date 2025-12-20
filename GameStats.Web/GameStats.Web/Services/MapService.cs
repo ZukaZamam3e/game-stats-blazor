@@ -14,9 +14,13 @@ public class MapService(IHttpClientFactory httpClientFactory) : IMapService, IDi
     private const string mapUpdateRoute = "api/map/update";
     private const string mapDeleteRoute = "api/map/delete";
 
-    public async Task<DataResponse<MapModel>> GetMapsAsync(int take, int offset)
+    public async Task<DataResponse<MapModel>> GetMapsAsync(int take, int offset, int? mapId = null, string? mapName = null, int? gameId = null)
     {
         string query = $"?take={take}&offset={offset}";
+        if (mapId.HasValue) query += $"&mapId={mapId.Value}";
+        if (!string.IsNullOrEmpty(mapName)) query += $"&mapName={Uri.EscapeDataString(mapName)}";
+        if (gameId.HasValue) query += $"&gameId={gameId.Value}";
+        
         var httpResponse = await httpClient.GetAsync(mapDataRoute + query);
         var response = await httpResponse.ParseResponseAsync<DataResponse<MapModel>>();
         return response;

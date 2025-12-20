@@ -12,9 +12,14 @@ public class MatchTypeService(IHttpClientFactory httpClientFactory) : IMatchType
     private const string matchTypeUpdateRoute = "api/matchType/update";
     private const string matchTypeDeleteRoute = "api/matchType/delete";
 
-    public async Task<DataResponse<MatchTypeModel>> GetMatchTypesAsync(int take, int offset)
+    public async Task<DataResponse<MatchTypeModel>> GetMatchTypesAsync(int take, int offset, int? matchTypeId = null, string? matchTypeName = null, int? gameId = null)
     {
         string query = $"?take={take}&offset={offset}";
+
+        if (matchTypeId.HasValue) query += $"&matchTypeId={matchTypeId.Value}";
+        if (!string.IsNullOrEmpty(matchTypeName)) query += $"&matchTypeName={Uri.EscapeDataString(matchTypeName)}";
+        if (gameId.HasValue) query += $"&gameId={gameId.Value}";
+
         var httpResponse = await httpClient.GetAsync(matchTypeDataRoute + query);
         var response = await httpResponse.ParseResponseAsync<DataResponse<MatchTypeModel>>();
         return response;

@@ -1,0 +1,106 @@
+﻿@page "/match"
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+@using GameStats.Web.Models.Responses
+@using GameStats.Web.Services.Interfaces
+@inject IMatchService _matchService
+@inject DialogService dialogService
+
+@if (matches is null)
+{
+    <Loading></Loading>
+}
+else
+{
+    <RadzenDataGrid @ref="@matchGrid"
+                    TItem="MatchModel"
+                    Data="@matches"
+                    SelectionMode="DataGridSelectionMode.Single"
+                    Count="@count"
+                    LoadData="@LoadData">
+        <HeaderTemplate>
+            <RadzenButton class="float-end" Icon="add_circle_outline" Text="Add New" Click="@AddMatch" />
+        </HeaderTemplate>
+        <Columns>
+            <RadzenDataGridColumn Property="@nameof(MatchModel.MatchId)" Title="Match Id" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Property="@nameof(MatchModel.OldMatchId)" Title="Old Match Date" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Property="@nameof(MatchModel.GameId)" Title="Game Id" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Property="@nameof(MatchModel.MatchName)" Title="Match Name" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Property="@nameof(MatchModel.TypeCd)" Title="Type Cd" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Property="@nameof(MatchModel.MapId)" Title="Map Id" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Property="@nameof(MatchModel.TotalTime)" Title="Total Time" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Property="@nameof(MatchModel.CreatedDate)" Title="Created Date" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Width="160px" TItem="MatchModel" Context="match">
+                <Template>
+                    <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="edit" class="rz-m-1" Click=@(() => EditMatch(match)) />
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" class="rz-m-1" Click=@(() => DeleteMatch(match)) />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+
+@code {
+    private RadzenDataGrid<MatchModel> matchGrid;
+    private IEnumerable<MatchModel>? matches;
+    private int count;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await GetMatches(Constants.PageSize, Constants.Offset);
+    }
+
+    private async void LoadData(LoadDataArgs args)
+    {
+        int take = args.Top ?? 0;
+        int offset = args.Skip ?? 0;
+        await GetMatches(take, offset);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task GetMatches(int take, int offset)
+    {
+        DataResponse<MatchModel> response = await _matchService.GetMatchesAsync(take, offset);
+        count = response.Count;
+        matches = response.Data;
+    }
+
+    private async Task LoadMatches()
+    {
+        await GetMatches(Constants.PageSize, Constants.Offset);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async void AddMatch()
+    {
+        MatchModel match = await dialogService.OpenAddEditWindow<AddEditMatch>(
+            $"Add Match",
+            new Dictionary<string, object>() { { "match", new MatchModel() } });
+
+        await LoadMatches();
+    }
+
+    private async void EditMatch(MatchModel match)
+    {
+        match = await dialogService.OpenAddEditWindow<AddEditMatch>(
+            $"Edit Match",
+            new Dictionary<string, object>() { { "match", match } });
+
+        await matchGrid.UpdateRow(match);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async void DeleteMatch(MatchModel match)
+    {
+        bool? confirmed = await dialogService.DeleteConfirmation();
+
+        if (confirmed == true)
+        {
+            await _matchService.DeleteMatchAsync(match.MatchId);
+
+            await LoadMatches();
+        }
+    }
+}
