@@ -1,0 +1,103 @@
+﻿@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+@using GameStats.Web.Models.Responses
+@using GameStats.Web.Services.Interfaces
+@inject IMatchTeamService _matchTeamService
+@inject DialogService dialogService
+
+@if (matchTeams is null)
+{
+    <Loading></Loading>
+}
+else
+{
+    <RadzenDataGrid @ref="@matchTeamsGrid"
+                    TItem="MatchTeamModel"
+                    Data="@matchTeams"
+                    SelectionMode="DataGridSelectionMode.Single"
+                    Count="@count"
+                    LoadData="@LoadData">
+        <HeaderTemplate>
+            <RadzenButton class="float-end" Icon="add_circle_outline" Text="Add New" Click="@AddMatchTeam" />
+        </HeaderTemplate>
+        <Columns>
+            <RadzenDataGridColumn Property="@nameof(MatchTeamModel.MatchTeamId)" Title="Match Team Id" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Property="@nameof(MatchTeamModel.MatchId)" Title="Match Id" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Property="@nameof(MatchTeamModel.TeamColor)" Title="Team Color" Frozen="true" Width="160px" />
+            <RadzenDataGridColumn Width="160px" TItem="MatchTeamModel" Context="matchTeam">
+                <Template>
+                    <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="edit" class="rz-m-1" Click=@(() => EditMatchTeam(matchTeam)) />
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" class="rz-m-1" Click=@(() => DeleteMatchTeam(matchTeam)) />
+                </Template>
+            </RadzenDataGridColumn>
+        </Columns>
+    </RadzenDataGrid>
+}
+
+@code {
+    private RadzenDataGrid<MatchTeamModel> matchTeamsGrid;
+    private IEnumerable<MatchTeamModel>? matchTeams;
+    private int count;
+
+    [Parameter]
+    public int MatchId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetMatchTeams(Constants.PageSize, Constants.Offset);
+        await base.OnInitializedAsync();
+    }
+
+    private async void LoadData(LoadDataArgs args)
+    {
+        int take = args.Top ?? 0;
+        int offset = args.Skip ?? 0;
+        await GetMatchTeams(take, offset);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task GetMatchTeams(int take, int offset)
+    {
+        DataResponse<MatchTeamModel> response = await _matchTeamService.GetMatchTeamsAsync(take, offset, null, MatchId, null);
+        count = response.Count;
+        matchTeams = response.Data;
+    }
+
+    private async Task LoadMatchTeams()
+    {
+        await GetMatchTeams(Constants.PageSize, Constants.Offset);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async void AddMatchTeam()
+    {
+        MatchTeamModel match = await dialogService.OpenAddEditWindow<AddEditMatchTeam>(
+            $"Add Match Team",
+            new Dictionary<string, object>() { { "matchTeam", new MatchTeamModel() } });
+
+        await LoadMatchTeams();
+    }
+
+    private async void EditMatchTeam(MatchTeamModel matchTeam)
+    {
+        matchTeam = await dialogService.OpenAddEditWindow<AddEditMatchTeam>(
+            $"Edit Match Team",
+            new Dictionary<string, object>() { { "matchTeam", matchTeam } });
+
+        await matchTeamsGrid.UpdateRow(matchTeam);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async void DeleteMatchTeam(MatchTeamModel matchTeam)
+    {
+        bool? confirmed = await dialogService.DeleteConfirmation();
+
+        if (confirmed == true)
+        {
+            await _matchTeamService.DeleteMatchTeamAsync(matchTeam.MatchTeamId);
+
+            await LoadMatchTeams();
+        }
+    }
+}

@@ -21,6 +21,8 @@ public static class DependencyInjection
         services.AddScoped<IPlayerService, PlayerService>();
         services.AddScoped<IMatchTypeService, MatchTypeService>();
         services.AddScoped<IMatchService, MatchService>();
+        services.AddScoped<IMatchTeamService, MatchTeamService>();
+        services.AddScoped<IMatchPlayerService, MatchPlayerService>();
 
         return services;
     }

@@ -8,6 +8,7 @@ public class MatchService(IHttpClientFactory httpClientFactory) : IMatchService,
 {
     private readonly HttpClient httpClient = httpClientFactory.CreateClient(Constants.GameStatsWebAPIClient);
     private const string matchDataRoute = "api/match/data";
+    private const string matchGetRoute = "api/match/get";
     private const string matchCreateRoute = "api/match/create";
     private const string matchUpdateRoute = "api/match/update";
     private const string matchDeleteRoute = "api/match/delete";
@@ -17,6 +18,14 @@ public class MatchService(IHttpClientFactory httpClientFactory) : IMatchService,
         string query = $"?take={take}&offset={offset}";
         var httpResponse = await httpClient.GetAsync(matchDataRoute + query);
         var response = await httpResponse.ParseResponseAsync<DataResponse<MatchModel>>();
+        return response;
+    }
+
+    public async Task<MatchModel> GetMatchAsync(int matchId)
+    {
+        string query = $"?matchId={matchId}";
+        var httpResponse = await httpClient.GetAsync(matchGetRoute + query);
+        var response = await httpResponse.ParseResponseAsync<MatchModel>();
         return response;
     }
 

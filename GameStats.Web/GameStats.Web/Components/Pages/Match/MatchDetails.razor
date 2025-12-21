@@ -1,0 +1,109 @@
+﻿@page "/matchdetails"
+@attribute [StreamRendering]
+@rendermode InteractiveServer
+
+@using GameStats.Web.Components.Pages.MatchTeam
+@using GameStats.Web.Components.Pages.MatchPlayer
+@using GameStats.Web.Models.Responses
+@using GameStats.Web.Services.Interfaces
+@inject IMatchService _matchService
+@inject IMatchTeamService _matchTeamService
+@inject IMatchPlayerService _matchPlayerService
+@inject DialogService dialogService
+
+@if (match is null)
+{
+    <Loading></Loading>
+}
+else
+{
+    <RadzenAccordion Multiple="true">
+        <Items>
+            <RadzenAccordionItem Text="Match Details" Icon="account_balance_wallet" Selected="true">
+                <RadzenRow Gap="2rem" class="rz-p-0 rz-p-lg-4">
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="MatchId" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenText>@match.MatchId</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="Old Match Id" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenText>@match.OldMatchId</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="Game Id" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenText>@match.GameId</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="Match Name" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenText>@match.MatchName</RadzenText>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="6">
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="Type Cd" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenText>@match.TypeCd</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="Map Id" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenText>@match.MapId</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="Total Time" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenText>@match.TotalTime</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="Created Date" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenText>@match.CreatedDate</RadzenText>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenAccordionItem>
+            <RadzenAccordionItem Text="Match Teams" Icon="account_box" Selected="true">
+                <MatchTeam MatchId="match.MatchId" />
+            </RadzenAccordionItem>
+            <RadzenAccordionItem Text="Match Players" Icon="accessibility" Selected="true">
+                <MatchPlayer MatchId="match.MatchId" />
+            </RadzenAccordionItem>
+        </Items>
+    </RadzenAccordion>
+}
+
+
+@code {
+    private MatchModel? match;
+
+    [SupplyParameterFromQuery]
+    public int MatchId { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMatchDetails();
+        await base.OnInitializedAsync();
+    }
+
+    private async Task LoadMatchDetails()
+    {
+        match = await _matchService.GetMatchAsync(MatchId);
+    }
+}

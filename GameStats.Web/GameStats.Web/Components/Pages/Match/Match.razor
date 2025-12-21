@@ -4,11 +4,12 @@
 
 @using GameStats.Web.Models.Responses
 @using GameStats.Web.Services.Interfaces
+@inject NavigationManager _nav
 @inject IMatchService _matchService
 @inject DialogService dialogService
 
 @if (matches is null)
-{
+{   
     <Loading></Loading>
 }
 else
@@ -33,6 +34,7 @@ else
             <RadzenDataGridColumn Property="@nameof(MatchModel.CreatedDate)" Title="Created Date" Frozen="true" Width="160px" />
             <RadzenDataGridColumn Width="160px" TItem="MatchModel" Context="match">
                 <Template>
+                    <RadzenButton ButtonStyle="ButtonStyle.Info" Icon="visibility" class="rz-m-1" Click=@(() => OpenMatch(match)) />
                     <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="edit" class="rz-m-1" Click=@(() => EditMatch(match)) />
                     <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="delete" class="rz-m-1" Click=@(() => DeleteMatch(match)) />
                 </Template>
@@ -102,5 +104,10 @@ else
 
             await LoadMatches();
         }
+    }
+
+    private void OpenMatch(MatchModel match)
+    {
+        _nav.NavigateTo($"/matchDetails?matchId={match.MatchId}");
     }
 }

@@ -6,6 +6,7 @@ namespace GameStats.Web.Services.Interfaces;
 public interface IMatchService
 {
     Task<DataResponse<MatchModel>> GetMatchesAsync(int take, int offset);
+    Task<MatchModel> GetMatchAsync(int matchId);
     Task<MatchModel> CreateMatchAsync(MatchModel match);
     Task<MatchModel> UpdateMatchAsync(MatchModel match);
     Task<bool> DeleteMatchAsync(int matchId);
